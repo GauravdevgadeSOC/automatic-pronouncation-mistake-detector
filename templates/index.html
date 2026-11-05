@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#f4f4ef">
+  <title>Saywise | English speaking practice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Saywise home">
+      <span class="brand-mark">S</span><span>saywise</span>
+    </a>
+    <div class="topbar-right">
+      <span class="privacy-indicator"><span class="privacy-dot"></span>Local analysis</span>
+      <button class="text-button hidden" id="logout-button" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main id="auth-view" class="auth-layout">
+    <section class="auth-intro">
+      <p class="eyebrow">A quieter way to practice</p>
+      <h1>Find your<br><em>speaking rhythm.</em></h1>
+      <p class="intro-copy">Short practice, clear evidence, and room to improve at your own pace.</p>
+      <div class="auth-note"><span class="note-mark">S</span><span>Practice history stays in the local database. Audio is kept only when you choose to retain it.</span></div>
+    </section>
+    <section class="auth-panel" aria-labelledby="auth-title">
+      <div class="auth-tabs" role="tablist" aria-label="Account access">
+        <button class="auth-tab active" id="signin-tab" type="button" role="tab" aria-selected="true">Sign in</button>
+        <button class="auth-tab" id="register-tab" type="button" role="tab" aria-selected="false">Create account</button>
+      </div>
+      <h2 id="auth-title">Welcome back</h2>
+      <p class="muted" id="auth-subtitle">Pick up where your last practice ended.</p>
+      <form id="auth-form">
+        <label class="field hidden" id="name-field">Name<input name="display_name" autocomplete="name" maxlength="80"></label>
+        <label class="field">Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+        <label class="field">Password<input name="password" type="password" autocomplete="current-password" minlength="10" required></label>
+        <label class="field hidden" id="level-field">Practice level
+          <select name="level"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+        </label>
+        <button class="button button-primary full-width" type="submit" id="auth-submit">Sign in</button>
+        <p class="form-message" id="auth-message" role="status"></p>
+      </form>
+      <p class="fine-print">Use a password you do not use elsewhere.</p>
+    </section>
+  </main>
+
+  <div id="app-view" class="app-layout hidden">
+    <aside class="sidebar">
+      <div class="user-chip"><span class="avatar" id="user-initial">S</span><div><strong id="user-name">Student</strong><small id="user-level">Beginner practice</small></div></div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="practice" type="button"><span class="nav-glyph">01</span>Practice</button>
+        <button class="nav-item" data-view="history" type="button"><span class="nav-glyph">02</span>Practice history</button>
+        <button class="nav-item" data-view="profile" type="button"><span class="nav-glyph">03</span>Profile</button>
+        <button class="nav-item hidden" data-view="admin" id="admin-nav" type="button"><span class="nav-glyph">04</span>Admin</button>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-pip"></span><span>Models run locally</span></div>
+    </aside>
+
+    <section class="workspace">
+      <section id="practice-view" class="content-view">
+        <div class="page-heading">
+          <div><p class="eyebrow" id="today-label">SAYWISE PRACTICE</p><h1>Make a little <em>progress.</em></h1></div>
+          <div class="level-control"><label for="level-select">Level</label><select id="level-select"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
+        </div>
+
+        <div class="summary-strip">
+          <div class="summary-item"><span class="summary-label">Sessions</span><strong id="sessions-count">0</strong><span class="summary-foot">practice attempts</span></div>
+          <div class="summary-item"><span class="summary-label">Last transcript</span><strong class="summary-transcript" id="last-transcript">Not yet recorded</strong><span class="summary-foot">from your latest session</span></div>
+          <div class="summary-item challenge-item"><span class="summary-label">Daily sentence</span><strong id="challenge-text">Choose a sentence to begin</strong><button class="inline-link" id="challenge-button" type="button">Practice today’s line <span aria-hidden="true">→</span></button></div>
+        </div>
+
+        <div class="practice-grid">
+          <section class="practice-column">
+            <div class="section-heading"><div><p class="eyebrow">TODAY'S SESSION</p><h2>Read it out loud</h2></div><span class="step-count">01 <i>/</i> 03</span></div>
+            <div class="sentence-toolbar">
+              <label class="select-wrap"><span class="sr-only">Choose a sentence</span><select id="sentence-select"></select></label>
+              <span class="category-label" id="sentence-category">Everyday</span>
+            </div>
+            <label class="field custom-prompt-field hidden" id="custom-prompt-field">
+              Your sentence or paragraph
+              <textarea id="custom-prompt" rows="4" placeholder="Type or paste any sentence, phrase, or paragraph you want to check. There are no length limits."></textarea>
+            </label>
+            <div class="prompt-panel">
+              <span class="prompt-index">SAY THIS</span>
+              <p id="sentence-prompt">Choose a sentence above.</p>
+              <div class="prompt-footer"><span>Read at a comfortable pace</span><span id="prompt-word-count">0 words</span></div>
+            </div>
+
+            <div class="recording-panel">
+              <div class="recording-top"><div><span class="eyebrow">YOUR RECORDING</span><span class="recording-time" id="recording-time">00:00</span></div><span class="recording-state" id="recording-state">Ready when you are</span></div>
+              <canvas id="waveform" aria-label="Live audio waveform"></canvas>
+              <div class="recording-actions">
+                <button class="button button-record" id="record-button" type="button"><span class="record-dot"></span>Record</button>
+                <button class="button button-secondary hidden" id="stop-button" type="button">Finish recording</button>
+                <button class="button button-primary" id="analyze-button" type="button" disabled>Analyze recording <span aria-hidden="true">→</span></button>
+              </div>
+              <audio id="audio-preview" controls class="audio-preview hidden"></audio>
+              <label class="consent-toggle"><input type="checkbox" id="store-audio"><span>Keep this recording in my history</span></label>
+              <p class="recording-help" id="recording-help">Your audio is deleted after analysis unless you opt in to retention.</p>
+              <p class="form-message" id="recording-message" role="status"></p>
+            </div>
+          </section>
+
+          <section class="results-column" aria-live="polite">
+            <div class="section-heading"><div><p class="eyebrow">SESSION REVIEW</p><h2>Your evidence</h2></div><span class="review-status" id="review-status">WAITING</span></div>
+            <div class="result-empty" id="result-empty"><span class="empty-signal">/</span><p>Your analysis will appear here after you record.</p></div>
+            <div class="results-content hidden" id="results-content">
+              <div class="transcript-block"><span class="result-label">RECOGNIZED SPEECH</span><p id="recognized-text">—</p><div class="confidence-line"><span>Language confidence</span><strong id="transcript-confidence">—</strong></div></div>
+              <div class="metric-row">
+                <div class="metric"><span class="result-label">WORD ERROR RATE</span><strong id="word-edits">—</strong><small id="word-edit-types">sub · omit · add</small></div>
+                <div class="metric"><span class="result-label">SPEAKING RATE</span><strong id="speaking-rate">—</strong><small>words / minute</small></div>
+                <div class="metric"><span class="result-label">PAUSE PROFILE</span><strong id="longest-pause">—</strong><small id="pause-summary">longest pause · duration</small></div>
+              </div>
+              <div class="comparison-block"><span class="result-label">WORD COMPARISON</span><div id="word-comparison" class="word-comparison"></div></div>
+              <div class="phoneme-block"><div class="phoneme-title"><span class="result-label">PHONE SEQUENCE</span><span class="experimental-tag">EXPERIMENTAL</span></div><div class="phone-line"><span>Expected</span><p id="expected-phones">Not available</p></div><div class="phone-line"><span>Recognized</span><p id="recognized-phones">Not available</p></div><p class="phone-notice" id="phone-notice">No validated pronunciation score is available.</p></div>
+              <div class="feedback-block"><span class="result-label">NEXT REP</span><ul id="feedback-list"></ul></div>
+              <p class="method-note" id="method-note"></p>
+              <button class="inline-link hidden" id="download-report" type="button">Download session report <span aria-hidden="true">↓</span></button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="history-view" class="content-view hidden">
+        <div class="page-heading"><div><p class="eyebrow">YOUR PRACTICE</p><h1>Small steps, <em>over time.</em></h1></div></div>
+        <div class="history-layout">
+          <section class="history-chart-panel"><div class="section-heading"><div><p class="eyebrow">RECENT SESSIONS</p><h2>Practice rhythm</h2></div><span class="chart-unit">TRANSCRIPT WORD CHANGES</span></div><canvas id="history-chart" height="180"></canvas></section>
+          <section class="history-list-panel"><div class="section-heading"><div><p class="eyebrow">ARCHIVE</p><h2>Session history</h2></div></div><div id="history-list" class="history-list"></div></section>
+        </div>
+      </section>
+
+      <section id="profile-view" class="content-view hidden">
+        <div class="page-heading"><div><p class="eyebrow">YOUR ACCOUNT</p><h1>Practice on <em>your terms.</em></h1></div></div>
+        <section class="profile-panel">
+          <form id="profile-form"><label class="field">Display name<input name="display_name" id="profile-name" maxlength="80" required></label><label class="field">Learning level<select id="profile-level"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label><button class="button button-primary" type="submit">Save profile</button><p class="form-message" id="profile-message" role="status"></p></form>
+          <div class="privacy-section"><p class="eyebrow">DATA AND PRIVACY</p><p>Only retained recordings are stored as audio. Your transcripts and analysis remain in your practice history.</p><button class="button button-danger" id="delete-history" type="button">Delete practice history</button><button class="text-button danger-text" id="delete-account" type="button">Delete account and all data</button></div>
+        </section>
+      </section>
+
+      <section id="admin-view" class="content-view hidden">
+        <div class="page-heading"><div><p class="eyebrow">SYSTEM OVERVIEW</p><h1>Saywise <em>admin.</em></h1></div></div>
+        <div class="admin-metrics" id="admin-metrics"></div>
+      </section>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>
